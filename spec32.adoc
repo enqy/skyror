@@ -1,0 +1,92 @@
+= skyror32 ISA
+:revnumber: 0.1.0
+
+:doctype: article
+:encoding: utf-8
+:lang: en
+:toc:
+
+== Base Architecture
+
+The base architecture is the minimum requirement of a skyror32 implementation. It provides both control flow as well as integer instructions.
+
+=== Registers
+
+The base skyror32 ISA consists of 256 general purpose registers with 8 registers being reserved for special purposes.
+
+|===
+|Register   |Alias    |Purpose
+
+|`r0`       |`z`      |Always Zero
+|`r1`       |`pc`     |Program Counter
+|`r2`       |`v`      |Vector
+|`r3`-`r7`  |         |Reserved
+|`r8`-`r255`|         |General Purpose
+|===
+
+==== `z` Register
+
+Hard-wired to zero. Writing to the register does nothing.
+
+==== `pc` Register
+
+A read-only register that stores the memory address of the current instruction. Writing to the register does nothing.
+
+==== `v` Register
+
+When set to a value other than 0x0, instructions will be treated as vector instructions. The first 6 bits of this register determines the length of the vector. The other 2 bits determines how many registers the vector instruction will skip as well as how the vector instruction treats the `REGs1` and `REGs2` registers following the chart below. These vector instructions will run from `REGd` and end at `REGd` + `<vector length>`.
+
+|===
+|Bits|Description
+
+|00  |Both REGs1 and REGs2 are locked
+|01  |REGs1 is locked
+|10  |REGs2 is locked
+|11  |Skips two registers
+|===
+
+=== Instruction Encoding
+
+The base skyror32 ISA contains 2 instruction formats: X and Y. Each instruction is always 32 bits wide and always starts with a 7-bit opcode. The register id is 8-bits long.
+
+[%autowidth]
+|===
+|Format|Operands
+
+|X     |Reg, Reg, Reg
+|Y     |Reg, 16-bit Immediate
+|===
+
+|===
+|Format 32+^|Bits
+
+|           |31|30|29|28|27|26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|10|9|8|7|6|5|4|3|2|1|0
+|X          |0         8+^|REGs2               8+^|REGs1              8+^|REGd         7+^|OPCODE
+|Y          |HL                16+^|16-bit Immediate                  8+^|REGd         7+^|OPCODE
+|===
+
+[%autowidth]
+|===
+|Field  |Description
+
+|HL     |Puts the immediate in high bits or low bits.
+|REGd   |Destination register id, 8 bits wide.
+|REGs1  |Source register 1 id, 8 bits wide.
+|REGs2  |Source register 2 id, 8 bits wide.
+|OPCODE |Operation, follows encoding specified below.
+|===
+
+==== Opcode Encoding
+
+The least significant bit of the opcode is used to determine the instruction format.
+
+[%autowidth]
+|===
+|Bit|Format
+
+|0   |Format X
+|1   |Format Y
+|===
+
+=== Instructions
+
