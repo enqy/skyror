@@ -1,92 +1,170 @@
-= skyror32 ISA
+= skyror32 Instruction Set Manual
+enqy <contact@enqy.one>
 :revnumber: 0.1.0
-
-:doctype: article
+:reproducible:
+:doctype: book
 :encoding: utf-8
 :lang: en
 :toc:
 
+== Preface
+
+This document describes the skyror32 instruction set architecture.
+
+This document is a work in progress, implementations that decide to use the instruction set in its current state should watch for breaking changes.
+
+This document is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License.
+
+== Introduction
+
+=== Overview
+
+skyror32 is a free and open source hybrid instruction set architecture mainly inspired by RISC style architectures.
+It is designed to be small, simple, and highly scalable.
+It is designed mainly for use in embedded systems, but can be used freely anywhere else.
+
+skyror32 is a load-store architecture that like RISC-V is split into a tiny base instruction set with optional standardized and non-standardized extensions.
+The non-standardized extension system allows third-party extensions to be implemented.
+
 == Base Architecture
 
-The base architecture is the minimum requirement of a skyror32 implementation. It provides both control flow as well as integer instructions.
+The base architecture is the minimum requirement of a skyror32 implementation.
+It provides both control flow as well as integer instructions.
 
 === Registers
 
-The base skyror32 ISA consists of 256 general purpose registers with 8 registers being reserved for special purposes.
+skyror32 has a total of 128 registers split into 64 general purpose registers and 64 reserved registers.
+
+Each general purpose register is 32 bits wide.
+All general purpose registers are vectorized registers, meaning that they have a implementation defined depth.
+These registers can also be used by extensions for commonly used purposes.
+The register id's have a most significant bit of 1.
+They are prefixed with `g` and are followed by a number.
+
+The reserved registers can be used for special purposes by extensions as well as the base architecture.
+These reserved registers may not follow the vectorized standard that the general purpose registers use.
+Reserved registers may not have a width of 32 bits.
+The id's have a most significant bit of 0.
+They are prefixed with `r` and are followed by a number.
 
 |===
 |Register   |Alias    |Purpose
 
+|`g0-g63`   |         |General Purpose
+
+
 |`r0`       |`z`      |Always Zero
 |`r1`       |`pc`     |Program Counter
-|`r2`       |`v`      |Vector
-|`r3`-`r7`  |         |Reserved
-|`r8`-`r255`|         |General Purpose
+|`r2`       |`vd`     |Vector Depth
+|`r3`       |`v`      |Vector
+|`r4`       |`vm`     |Vector Mask
+|`r5`       |`vi`     |Vector Index
+|`r3-r63`   |         |Reserved
 |===
 
 ==== `z` Register
 
-Hard-wired to zero. Writing to the register does nothing.
+Hard-wired to zero. Writing to the register is a 1 cycle no-op.
 
 ==== `pc` Register
 
-A read-only register that stores the memory address of the current instruction. Writing to the register does nothing.
+A read-only register that stores the memory address of the current instruction.
+Writing to the register is a 1 cycle no-op.
+
+==== `vd` Register
+
+A read-only register that contains the implementation's maximum vector depth.
 
 ==== `v` Register
 
-When set to a value other than 0x0, instructions will be treated as vector instructions. The first 6 bits of this register determines the length of the vector. The other 2 bits determines how many registers the vector instruction will skip as well as how the vector instruction treats the `REGs1` and `REGs2` registers following the chart below. These vector instructions will run from `REGd` and end at `REGd` + `<vector length>`.
+When set to a value other than 0x0, instructions will be treated as vector instructions.
+When set, it determines the vector depth of the instruction.
+Must be set to a value less than or equal to the value of the `vd` register.
 
-|===
-|Bits|Description
+==== `vm` Register
 
-|00  |Both REGs1 and REGs2 are locked
-|01  |REGs1 is locked
-|10  |REGs2 is locked
-|11  |Skips two registers
-|===
+Has as many bits as the vector depth.
+Determines which vector indicies will be skipped.
+If the bit corresponding to the vector index is set, the vector index will be skipped.
+
+==== `vi` Register
+
+A read-only register that contains the current index of the vector instruction.
+
+<<<
 
 === Instruction Encoding
 
-The base skyror32 ISA contains 2 instruction formats: X and Y. Each instruction is always 32 bits wide and always starts with a 7-bit opcode. The register id is 8-bits long.
+The base skyror32 ISA contains four instruction encoding formats: C, S, F, and D each with a different number of destination and source registers.
+
+The C format contains 2 source registers and a single destination register.
+The S format contains a single source register and 2 destination registers.
+The F format contains a single source register and a single destination register as well as a function.
+The D format contains a single 32 bit immediate.
+
+The least significant bit of the C, S, and F instruction encoding formats are used to signal for a data trailer.
+
+The C, S, and F instruction formats use a 8 bit opcode in the most significant bits.
+Each register is encoded as a 7 bit value in the least significant bits after the trailer bit.
+
+The actual bit encoding of each format is listed below.
+
+==== C Format
 
 [%autowidth]
 |===
-|Format|Operands
+32+^|Bits
 
-|X     |Reg, Reg, Reg
-|Y     |Reg, 16-bit Immediate
+|31|30|29|28|27|26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|10|9|8|7|6|5|4|3|2|1|0
+|0|0      8+^|OPCODE                7+^|REGs2          7+^|REGs1        7+^|REGd1   |T
 |===
 
-|===
-|Format 32+^|Bits
+==== S Format
 
-|           |31|30|29|28|27|26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|10|9|8|7|6|5|4|3|2|1|0
-|X          |0         8+^|REGs2               8+^|REGs1              8+^|REGd         7+^|OPCODE
-|Y          |HL                16+^|16-bit Immediate                  8+^|REGd         7+^|OPCODE
+[%autowidth]
 |===
+32+^|Bits
+
+|31|30|29|28|27|26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|10|9|8|7|6|5|4|3|2|1|0
+|0|1      8+^|OPCODE                7+^|REGs1          7+^|REGd2        7+^|REGd1   |T
+|===
+
+==== F Format
+
+[%autowidth]
+|===
+32+^|Bits
+
+|31|30|29|28|27|26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|10|9|8|7|6|5|4|3|2|1|0
+|1|0      8+^|OPCODE                7+^|FUNC            7+^|REGs1        7+^|REGd   |T
+|===
+
+==== D Format
+
+[%autowidth]
+|===
+32+^|Bits
+
+|31|30|29|28|27|26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|10|9|8|7|6|5|4|3|2|1|0
+                                      32+^|IMM
+|===
+
+<<<
+
+==== Fields
 
 [%autowidth]
 |===
 |Field  |Description
 
-|HL     |Puts the immediate in high bits or low bits.
-|REGd   |Destination register id, 8 bits wide.
-|REGs1  |Source register 1 id, 8 bits wide.
-|REGs2  |Source register 2 id, 8 bits wide.
-|OPCODE |Operation, follows encoding specified below.
+|OPCODE |Operation code
+|FUNC   |Function
+|REGs1  |Source register 1 id, 7 bits wide.
+|REGs2  |Source register 2 id, 7 bits wide.
+|REGd1  |Destination register 1 id, 7 bits wide.
+|REGd2  |Destination register 2 id, 7 bits wide.
+|T      |Signals if there is immediate data trailing.
+|IMM    |Immediate data, 32 bits wide.
 |===
 
-==== Opcode Encoding
-
-The least significant bit of the opcode is used to determine the instruction format.
-
-[%autowidth]
-|===
-|Bit|Format
-
-|0   |Format X
-|1   |Format Y
-|===
-
-=== Instructions
-
+<<<
