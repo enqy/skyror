@@ -1,56 +1,55 @@
-= skyror32 Instruction Set Manual
+= _skyror32_ Instruction Set Manual
 enqy <contact@enqy.one>
 :revnumber: 0.1.0
 :reproducible:
 :doctype: book
 :encoding: utf-8
 :lang: en
-:toc:
+:preface-title: Preface
+:toc: macro
 
-== Preface
-
-This document describes the skyror32 instruction set architecture.
+This document describes the _skyror32_ instruction set architecture.
 
 This document is a work in progress, implementations that decide to use the instruction set in its current state should watch for breaking changes.
 
 This document is licensed under the Creative Commons Attribution-ShareAlike 4.0 International License.
 
+toc::[]
+
 == Introduction
 
 === Overview
 
-skyror32 is a free and open source hybrid instruction set architecture mainly inspired by RISC style architectures.
+_skyror32_ is a free and open source hybrid instruction set architecture mainly inspired by RISC style architectures.
 It is designed to be small, simple, and highly scalable.
 It is designed mainly for use in embedded systems, but can be used freely anywhere else.
 
-skyror32 is a load-store architecture that like RISC-V is split into a tiny base instruction set with optional standardized and non-standardized extensions.
+_skyror32_ is a load-store architecture that like RISC-V is split into a tiny base instruction set with optional standardized and non-standardized extensions.
 The non-standardized extension system allows third-party extensions to be implemented.
 
 == Base Architecture
 
-The base architecture is the minimum requirement of a skyror32 implementation.
+The base architecture is the minimum requirement of a _skyror32_ implementation.
 It provides both control flow as well as integer instructions.
 
 === Registers
 
-skyror32 has a total of 128 registers split into 64 general purpose registers and 64 reserved registers.
+_skyror32_ has a total of 128 registers split into 112 general purpose registers and 16 reserved system registers.
 
 Each general purpose register is 32 bits wide.
 All general purpose registers are vectorized registers, meaning that they have a implementation defined depth.
 These registers can also be used by extensions for commonly used purposes.
-The register id's have a most significant bit of 1.
-They are prefixed with `g` and are followed by a number.
+They are shown here being prefixed with `g` and followed by a number.
 
-The reserved registers can be used for special purposes by extensions as well as the base architecture.
-These reserved registers may not follow the vectorized standard that the general purpose registers use.
-Reserved registers may not have a width of 32 bits.
-The id's have a most significant bit of 0.
-They are prefixed with `r` and are followed by a number.
+The reserved system registers are registers that are used for system purposes.
+These reserved system registers may not follow the vectorized standard that the general purpose registers use.
+Reserved system registers may not have a width of 32 bits.
+They are shown here being prefixed with `r` and followed by a number.
 
 |===
 |Register   |Alias    |Purpose
 
-|`g0-g63`   |         |General Purpose
+|`g0-g111`   |         |General Purpose
 
 
 |`r0`       |`z`      |Always Zero
@@ -59,8 +58,10 @@ They are prefixed with `r` and are followed by a number.
 |`r3`       |`v`      |Vector
 |`r4`       |`vm`     |Vector Mask
 |`r5`       |`vi`     |Vector Index
-|`r3-r63`   |         |Reserved
+|`r6-r15`   |         |Reserved
 |===
+
+==== Reserved Registers
 
 ==== `z` Register
 
@@ -74,6 +75,7 @@ Writing to the register is a 1 cycle no-op.
 ==== `vd` Register
 
 A read-only register that contains the implementation's maximum vector depth.
+Writing to the register is a 1 cycle no-op.
 
 ==== `v` Register
 
@@ -90,12 +92,13 @@ If the bit corresponding to the vector index is set, the vector index will be sk
 ==== `vi` Register
 
 A read-only register that contains the current index of the vector instruction.
+Writing to the register is a 1 cycle no-op.
 
 <<<
 
 === Instruction Encoding
 
-The base skyror32 ISA contains four instruction encoding formats: C, S, F, and D each with a different number of destination and source registers.
+The base _skyror32_ ISA contains four instruction encoding formats: C, S, F, and D each with a different number of destination and source registers.
 
 The C format contains 2 source registers and a single destination register.
 The S format contains a single source register and 2 destination registers.
@@ -168,3 +171,7 @@ The actual bit encoding of each format is listed below.
 |===
 
 <<<
+
+=== Instructions
+
+
