@@ -1,5 +1,5 @@
 {
-  description = "skyror: instruction set endgame.";
+  description = "skyror: a instruction set.";
 
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
