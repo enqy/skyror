@@ -22,7 +22,8 @@ toc::[]
 
 _skyror32_ is a free and open source hybrid instruction set architecture mainly inspired by RISC style architectures.
 It is designed to be small, simple, and highly scalable.
-It is designed mainly for use in embedded systems, but can be used freely anywhere else.
+It is designed mainly for use in accelerators, but can be used freely anywhere else.
+The ISA does not have a target towards code density.
 
 _skyror32_ is a load-store architecture that like RISC-V is split into a tiny base instruction set with optional standardized and non-standardized extensions.
 The non-standardized extension system allows third-party extensions to be implemented.
@@ -38,19 +39,18 @@ _skyror32_ has a total of 128 registers split into 112 general purpose registers
 
 Each general purpose register is 32 bits wide.
 All general purpose registers are vectorized registers, meaning that they have a implementation defined depth.
-These registers can also be used by extensions for commonly used purposes.
+These registers can also be used by extensions as long as they are not reserved by the extension.
 They are shown here being prefixed with `g` and followed by a number.
 
 The reserved system registers are registers that are used for system purposes.
-These reserved system registers may not follow the vectorized standard that the general purpose registers use.
+These reserved system registers may not be vectorized as the general purpose registers are.
 Reserved system registers may not have a width of 32 bits.
 They are shown here being prefixed with `r` and followed by a number.
 
 |===
 |Register   |Alias    |Purpose
 
-|`g0-g111`   |         |General Purpose
-
+|`g0-g111`  |         |General Purpose
 
 |`r0`       |`z`      |Always Zero
 |`r1`       |`pc`     |Program Counter
@@ -75,6 +75,8 @@ Writing to the register is a 1 cycle no-op.
 ==== `vd` Register
 
 A read-only register that contains the implementation's maximum vector depth.
+This is implementation defined, but must be a power of 2.
+On implementations that do not have a vector depth, this register must be set to 1.
 Writing to the register is a 1 cycle no-op.
 
 ==== `v` Register
@@ -91,8 +93,10 @@ If the bit corresponding to the vector index is set, the vector index will be sk
 
 ==== `vi` Register
 
-A read-only register that contains the current index of the vector instruction.
-Writing to the register is a 1 cycle no-op.
+A register that contains the current index of the vector instruction.
+Writing to the register before a vector instruction will set the starting index of the vector instruction.
+This register should be incremented by the implementation after each vector loop.
+This register will be reset to 0 after each vector instruction.
 
 <<<
 
@@ -172,6 +176,8 @@ The actual bit encoding of each format is listed below.
 
 <<<
 
-=== Instructions
+== Instructions
+
+=== Load and Store
 
 
